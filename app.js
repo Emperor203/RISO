@@ -87,6 +87,22 @@ class RisoApp {
       glitchAmount: 0.0,
       vhsScanlines: 0.0,
 
+      // Drum Layer Isolation (0 = All, 1 = Drum 1, 2 = Drum 2, 3 = Drum 3, 4 = Stencil B&W)
+      drumIsolation: 0,
+
+      // Authentic Japanese Hanko & Studio Stamps
+      enableHanko: true,
+      hankoText: '理想',
+      hankoShape: 'square',
+      hankoPos: 'bottom-right',
+
+      enableLimitedStamp: true,
+      stampStyle: 'limited',
+      stampNumber: '№ 07/50',
+
+      enableRegMarks: true,
+      enableDensityScale: true,
+
       // Typography Overlay (DISABLED BY DEFAULT - User requested clean photos with no unwanted text/numbers!)
       enableText: false,
       title: '',
@@ -107,6 +123,7 @@ class RisoApp {
     this.renderPalettesList();
     this.bindEvents();
     this.initTelegramWebApp();
+    this.updateStampsUI();
 
     // Check hash or load default preset
     const hash = window.location.hash ? window.location.hash.replace('#', '') : '';
@@ -404,6 +421,7 @@ class RisoApp {
     gl.uniform1i(gl.getUniformLocation(this.program, 'u_separationMode'), this.state.separationMode);
     gl.uniform1f(gl.getUniformLocation(this.program, 'u_inkDensity'), this.state.inkDensity);
     gl.uniform1i(gl.getUniformLocation(this.program, 'u_blendMode'), this.state.blendMode);
+    gl.uniform1i(gl.getUniformLocation(this.program, 'u_drumIsolation'), this.state.drumIsolation);
 
     // Halftone
     gl.uniform1f(gl.getUniformLocation(this.program, 'u_dotFrequency'), this.state.dotFrequency * 2.0);
@@ -524,6 +542,310 @@ class RisoApp {
     document.getElementById('threeColorToggle').checked = this.state.useThreeColors;
     document.getElementById('inkRow3').style.display = this.state.useThreeColors ? 'flex' : 'none';
     document.getElementById('separationToggle').checked = this.state.separationMode === 1;
+
+    const pill3 = document.getElementById('drumPill3');
+    if (pill3) {
+      pill3.style.display = this.state.useThreeColors ? 'inline-block' : 'none';
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Drum Layer Isolation & Stencil Master Film
+  // --------------------------------------------------------------------------
+  setDrumIsolation(mode) {
+    this.state.drumIsolation = parseInt(mode, 10) || 0;
+
+    // Update Drum Pills in Tab 3
+    document.querySelectorAll('.drum-pill').forEach(pill => {
+      pill.classList.toggle('active', parseInt(pill.dataset.drum, 10) === this.state.drumIsolation);
+    });
+
+    // Update Quick Floating Bar Button
+    const quickBtn = document.getElementById('btnQuickDrum');
+    if (quickBtn) {
+      const names = {
+        0: '● ВСЕ СЛОИ',
+        1: '① БАРАБАН 1',
+        2: '② БАРАБАН 2',
+        3: '③ БАРАБАН 3',
+        4: '◐ СТЕНСИЛ (Ч/Б)'
+      };
+      quickBtn.textContent = names[this.state.drumIsolation] || '● ВСЕ СЛОИ';
+      quickBtn.classList.toggle('active', this.state.drumIsolation !== 0);
+    }
+
+    this.triggerHaptic('selection');
+    this.render();
+
+    const toastMsgs = {
+      0: 'Все слои печати (Master Composite) 🖨️',
+      1: 'Изоляция: Барабан 1 (Основной цвет) 🟣',
+      2: 'Изоляция: Барабан 2 (Теневой цвет) 🔵',
+      3: 'Изоляция: Барабан 3 (Акцентный цвет) 🟡',
+      4: 'Мастер-плёнка: Ч/Б Трафарет для шелкографии ◐'
+    };
+    this.showToast(toastMsgs[this.state.drumIsolation] || 'Слой переключен');
+  }
+
+  cycleDrumIsolation() {
+    let next = this.state.drumIsolation + 1;
+    if (next === 3 && !this.state.useThreeColors) next = 4;
+    if (next > 4) next = 0;
+    this.setDrumIsolation(next);
+  }
+
+  // --------------------------------------------------------------------------
+  // Japanese Hanko Seal, Studio Stamps & Registration Marks
+  // --------------------------------------------------------------------------
+  updateStampsUI() {
+    // 1. Japanese Hanko Master Seal (印)
+    const hankoBadge = document.getElementById('hankoBadge');
+    const hankoChar = document.getElementById('hankoCharText');
+    if (hankoBadge) {
+      hankoBadge.style.display = this.state.enableHanko ? 'flex' : 'none';
+      hankoBadge.classList.remove('pos-bottom-right', 'pos-bottom-left', 'pos-top-right', 'round-seal');
+      hankoBadge.classList.add(`pos-${this.state.hankoPos}`);
+      if (this.state.hankoShape === 'circle') {
+        hankoBadge.classList.add('round-seal');
+      }
+    }
+    if (hankoChar) {
+      hankoChar.textContent = this.state.hankoText || '理想';
+    }
+
+    // 2. Studio Edition Stamp
+    const stampEl = document.getElementById('studioEditionStamp');
+    const stampLabel = document.getElementById('stampLabelText');
+    const stampNum = document.getElementById('stampNumText');
+    if (stampEl) {
+      stampEl.style.display = this.state.enableLimitedStamp ? 'inline-flex' : 'none';
+    }
+    if (stampLabel) {
+      const labels = {
+        limited: 'LIMITED EDITION',
+        tokyo: 'TOKYO PRINT LAB 1984',
+        sample: 'SAMPLE // NOT FOR SALE',
+        qc: 'PASSED INSPECTION 済'
+      };
+      stampLabel.textContent = labels[this.state.stampStyle] || 'LIMITED EDITION';
+    }
+    if (stampNum) {
+      stampNum.textContent = this.state.stampNumber || '№ 07/50';
+    }
+
+    // 3. 4 Corner Registration Crosshairs
+    const regMarks = ['markTL', 'markTR', 'markBL', 'markBR'];
+    regMarks.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = this.state.enableRegMarks ? 'block' : 'none';
+    });
+
+    // 4. Density Calibration Wedge Bar
+    const densityBar = document.getElementById('densityBar');
+    if (densityBar) {
+      densityBar.style.display = this.state.enableDensityScale ? 'flex' : 'none';
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 2D Composite Canvas Rendering for Export (PNG, JPG, Telegram)
+  // --------------------------------------------------------------------------
+  renderCompositeExportCanvas() {
+    const w = this.glCanvas.width;
+    const h = this.glCanvas.height;
+    this.exportCanvas.width = w;
+    this.exportCanvas.height = h;
+    const ctx = this.exportCanvas.getContext('2d');
+
+    // 1. Draw WebGL Riso output
+    ctx.drawImage(this.glCanvas, 0, 0, w, h);
+
+    const s = Math.max(1, w / 800); // Scale factor for resolution independence
+
+    // 2. Draw Corner Registration Crosshairs
+    if (this.state.enableRegMarks) {
+      this.drawRegistrationMarksToCanvas(ctx, w, h, s);
+    }
+
+    // 3. Draw Density Calibration Wedges
+    if (this.state.enableDensityScale) {
+      this.drawDensityScaleToCanvas(ctx, w, h, s);
+    }
+
+    // 4. Draw Studio Edition Stamp
+    if (this.state.enableLimitedStamp) {
+      this.drawStudioStampToCanvas(ctx, w, h, s);
+    }
+
+    // 5. Draw Authentic Japanese Hanko Seal
+    if (this.state.enableHanko) {
+      this.drawHankoToCanvas(ctx, w, h, s);
+    }
+
+    return this.exportCanvas;
+  }
+
+  drawRegistrationMarksToCanvas(ctx, w, h, s) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.strokeStyle = '#0055b8';
+    ctx.lineWidth = 1.2 * s;
+
+    const pad = 18 * s;
+    const r = 6 * s;
+    const len = 18 * s;
+    const corners = [
+      [pad, pad],
+      [w - pad, pad],
+      [pad, h - pad],
+      [w - pad, h - pad]
+    ];
+
+    corners.forEach(([cx, cy]) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx - len, cy);
+      ctx.lineTo(cx + len, cy);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - len);
+      ctx.lineTo(cx, cy + len);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  drawDensityScaleToCanvas(ctx, w, h, s) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    const bw = 8 * s;
+    const bh = 18 * s;
+    const x = w - 16 * s;
+    let y = h / 2 - (bh * 2);
+
+    const steps = [
+      'rgba(0, 85, 184, 1.0)',
+      'rgba(0, 85, 184, 0.75)',
+      'rgba(0, 85, 184, 0.50)',
+      'rgba(0, 85, 184, 0.25)'
+    ];
+
+    steps.forEach(color => {
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.lineWidth = 0.8 * s;
+      ctx.fillRect(x, y, bw, bh);
+      ctx.strokeRect(x, y, bw, bh);
+      y += bh + (3 * s);
+    });
+    ctx.restore();
+  }
+
+  drawStudioStampToCanvas(ctx, w, h, s) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.translate(24 * s, h - 30 * s);
+    ctx.rotate(0.02);
+
+    const labels = {
+      limited: 'LIMITED EDITION',
+      tokyo: 'TOKYO PRINT LAB 1984',
+      sample: 'SAMPLE // NOT FOR SALE',
+      qc: 'PASSED INSPECTION 済'
+    };
+    const title = labels[this.state.stampStyle] || 'LIMITED EDITION';
+    const num = this.state.stampNumber || '№ 07/50';
+
+    ctx.font = `bold ${10 * s}px "Courier New", monospace`;
+    const tw1 = ctx.measureText(title).width;
+    ctx.font = `900 ${12 * s}px "Courier New", monospace`;
+    const tw2 = ctx.measureText(num).width;
+    const boxW = Math.max(tw1, tw2) + 20 * s;
+    const boxH = 34 * s;
+
+    // Stamp box
+    ctx.strokeStyle = 'rgba(26, 28, 35, 0.85)';
+    ctx.lineWidth = 1.5 * s;
+    ctx.setLineDash([4 * s, 3 * s]);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(0, -boxH + 6 * s, boxW, boxH);
+    ctx.strokeRect(0, -boxH + 6 * s, boxW, boxH);
+
+    // Text
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#1a1c23';
+    ctx.font = `bold ${9 * s}px "Courier New", monospace`;
+    ctx.fillText(title, 8 * s, -boxH + 18 * s);
+
+    ctx.fillStyle = '#d32f2f';
+    ctx.font = `900 ${12 * s}px "Courier New", monospace`;
+    ctx.fillText(num, 8 * s, -boxH + 31 * s);
+
+    ctx.restore();
+  }
+
+  drawHankoToCanvas(ctx, w, h, s) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+
+    const size = 52 * s;
+    let x = w - size - 24 * s;
+    let y = h - size - 24 * s;
+
+    if (this.state.hankoPos === 'bottom-left') {
+      x = 24 * s;
+      y = h - size - 60 * s;
+    } else if (this.state.hankoPos === 'top-right') {
+      x = w - size - 24 * s;
+      y = 24 * s;
+    }
+
+    ctx.translate(x + size / 2, y + size / 2);
+    ctx.rotate(-0.06);
+
+    const half = size / 2;
+    const red = '#d32f2f';
+
+    ctx.strokeStyle = red;
+    ctx.lineWidth = 2.8 * s;
+    ctx.fillStyle = 'rgba(211, 47, 47, 0.08)';
+
+    if (this.state.hankoShape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, half - 2 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.setLineDash([3 * s, 2 * s]);
+      ctx.lineWidth = 1.2 * s;
+      ctx.arc(0, 0, half - 6 * s, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      const r = 4 * s;
+      ctx.beginPath();
+      ctx.moveTo(-half + r, -half);
+      ctx.arcTo(half, -half, half, half, r);
+      ctx.arcTo(half, half, -half, half, r);
+      ctx.arcTo(-half, half, -half, -half, r);
+      ctx.arcTo(-half, -half, half, -half, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = red;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 ${22 * s}px "Yu Mincho", "Hiragino Mincho ProN", serif`;
+    ctx.fillText(this.state.hankoText || '理想', 0, 1 * s);
+
+    ctx.restore();
   }
 
   // --------------------------------------------------------------------------
@@ -1115,6 +1437,115 @@ class RisoApp {
       if (this.state.enableText) reuploadWithText();
     });
 
+    // Drum Layer Isolation
+    const btnQuickDrum = document.getElementById('btnQuickDrum');
+    if (btnQuickDrum) {
+      btnQuickDrum.addEventListener('click', () => {
+        this.cycleDrumIsolation();
+      });
+    }
+
+    document.querySelectorAll('.drum-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        this.setDrumIsolation(pill.dataset.drum);
+      });
+    });
+
+    // Hanko Seal Controls
+    const enableHankoToggle = document.getElementById('enableHankoToggle');
+    if (enableHankoToggle) {
+      enableHankoToggle.addEventListener('change', (e) => {
+        this.state.enableHanko = e.target.checked;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    }
+
+    document.querySelectorAll('#hankoKanjiChips .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#hankoKanjiChips .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.state.hankoText = btn.dataset.kanji;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    });
+
+    const hankoShape = document.getElementById('hankoShape');
+    if (hankoShape) {
+      hankoShape.addEventListener('change', (e) => {
+        this.state.hankoShape = e.target.value;
+        this.updateStampsUI();
+      });
+    }
+
+    const hankoPosition = document.getElementById('hankoPosition');
+    if (hankoPosition) {
+      hankoPosition.addEventListener('change', (e) => {
+        this.state.hankoPos = e.target.value;
+        this.updateStampsUI();
+      });
+    }
+
+    // Studio Edition Stamp Controls
+    const enableStampToggle = document.getElementById('enableStampToggle');
+    if (enableStampToggle) {
+      enableStampToggle.addEventListener('change', (e) => {
+        this.state.enableLimitedStamp = e.target.checked;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    }
+
+    document.querySelectorAll('#stampTypeChips .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#stampTypeChips .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.state.stampStyle = btn.dataset.stamp;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    });
+
+    const stampNumInput = document.getElementById('stampNumberInput');
+    if (stampNumInput) {
+      stampNumInput.addEventListener('input', (e) => {
+        this.state.stampNumber = e.target.value;
+        this.updateStampsUI();
+      });
+    }
+
+    const btnRandomStamp = document.getElementById('btnRandomStampNum');
+    if (btnRandomStamp) {
+      btnRandomStamp.addEventListener('click', () => {
+        const n = String(Math.floor(Math.random() * 50) + 1).padStart(2, '0');
+        const max = 50;
+        this.state.stampNumber = `№ ${n}/${max}`;
+        if (stampNumInput) stampNumInput.value = this.state.stampNumber;
+        this.triggerHaptic('impact');
+        this.updateStampsUI();
+      });
+    }
+
+    // Registration Marks & Density Scale Controls
+    const regMarksToggle = document.getElementById('enableRegMarksToggle');
+    if (regMarksToggle) {
+      regMarksToggle.addEventListener('change', (e) => {
+        this.state.enableRegMarks = e.target.checked;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    }
+
+    const densityToggle = document.getElementById('enableDensityToggle');
+    if (densityToggle) {
+      densityToggle.addEventListener('change', (e) => {
+        this.state.enableDensityScale = e.target.checked;
+        this.triggerHaptic('selection');
+        this.updateStampsUI();
+      });
+    }
+
     // Scanner & Compare buttons (Desktop & Mobile)
     const scanHandler = () => {
       this.triggerHaptic('impact');
@@ -1684,7 +2115,11 @@ class RisoApp {
     const mime = format === 'png' ? 'image/png' : 'image/jpeg';
     const filename = `riso_art_${Date.now()}.${format === 'png' ? 'png' : 'jpg'}`;
 
-    this.glCanvas.toBlob((blob) => {
+    const exportTarget = (this.state.enableHanko || this.state.enableLimitedStamp || this.state.enableRegMarks || this.state.enableDensityScale)
+      ? this.renderCompositeExportCanvas()
+      : this.glCanvas;
+
+    exportTarget.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1703,7 +2138,11 @@ class RisoApp {
   }
 
   copyToClipboard() {
-    this.glCanvas.toBlob(async (blob) => {
+    const exportTarget = (this.state.enableHanko || this.state.enableLimitedStamp || this.state.enableRegMarks || this.state.enableDensityScale)
+      ? this.renderCompositeExportCanvas()
+      : this.glCanvas;
+
+    exportTarget.toBlob(async (blob) => {
       try {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })

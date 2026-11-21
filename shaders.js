@@ -41,6 +41,7 @@ const RISO_SHADERS = {
     uniform bool u_useThreeColors;
     uniform float u_inkDensity;    // 0.3 - 1.0
     uniform int u_separationMode;  // 0 = Duotone (Luma split), 1 = CMYK Color Separation
+    uniform int u_drumIsolation;   // 0 = All drums, 1 = Drum 1 only, 2 = Drum 2 only, 3 = Drum 3 only, 4 = B&W Stencil Film
 
     // Halftone Screening
     uniform float u_dotFrequency;  // Dot scale / LPI
@@ -272,42 +273,76 @@ const RISO_SHADERS = {
 
       vec3 result = paper;
 
-      // Layer 1 Print (e.g. Fluo Pink)
+      // Ink Drum Layer Calculations
       float alpha1 = dot1 * u_inkDensity;
-      if (u_blendMode == 0) {
-        // Multiply Blend (Real soy ink)
-        result = result * mix(vec3(1.0), u_inkColor1, alpha1);
-      } else if (u_blendMode == 1) {
-        // Subtractive
-        result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor1) * alpha1);
-      } else if (u_blendMode == 2) {
-        // Screen
-        result = 1.0 - (1.0 - result) * (1.0 - u_inkColor1 * alpha1);
-      } else {
-        result = mix(result, u_inkColor1, alpha1 * 0.85);
-      }
-
-      // Layer 2 Print (e.g. Federal Blue)
       float alpha2 = dot2 * u_inkDensity;
-      if (u_blendMode == 0) {
-        result = result * mix(vec3(1.0), u_inkColor2, alpha2);
-      } else if (u_blendMode == 1) {
-        result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor2) * alpha2);
-      } else if (u_blendMode == 2) {
-        result = 1.0 - (1.0 - result) * (1.0 - u_inkColor2 * alpha2);
-      } else {
-        result = mix(result, u_inkColor2, alpha2 * 0.85);
-      }
+      float alpha3 = dot3 * u_inkDensity;
 
-      // Layer 3 Print (e.g. Yellow)
-      if (u_useThreeColors) {
-        float alpha3 = dot3 * u_inkDensity;
+      if (u_drumIsolation == 1) {
+        // Isolated Drum 1 Only
+        if (u_blendMode == 0) {
+          result = result * mix(vec3(1.0), u_inkColor1, alpha1);
+        } else if (u_blendMode == 1) {
+          result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor1) * alpha1);
+        } else if (u_blendMode == 2) {
+          result = 1.0 - (1.0 - result) * (1.0 - u_inkColor1 * alpha1);
+        } else {
+          result = mix(result, u_inkColor1, alpha1 * 0.85);
+        }
+      } else if (u_drumIsolation == 2) {
+        // Isolated Drum 2 Only
+        if (u_blendMode == 0) {
+          result = result * mix(vec3(1.0), u_inkColor2, alpha2);
+        } else if (u_blendMode == 1) {
+          result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor2) * alpha2);
+        } else if (u_blendMode == 2) {
+          result = 1.0 - (1.0 - result) * (1.0 - u_inkColor2 * alpha2);
+        } else {
+          result = mix(result, u_inkColor2, alpha2 * 0.85);
+        }
+      } else if (u_drumIsolation == 3) {
+        // Isolated Drum 3 Only
         if (u_blendMode == 0) {
           result = result * mix(vec3(1.0), u_inkColor3, alpha3);
         } else if (u_blendMode == 1) {
           result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor3) * alpha3);
         } else {
           result = 1.0 - (1.0 - result) * (1.0 - u_inkColor3 * alpha3);
+        }
+      } else if (u_drumIsolation == 4) {
+        // B&W Stencil Master Plate (Silk-screen burn & Risograph thermal stencil)
+        float stencilInk = clamp(alpha1 + alpha2 + (u_useThreeColors ? alpha3 : 0.0), 0.0, 1.0);
+        result = vec3(1.0 - stencilInk);
+      } else {
+        // Composite: All Drums (Normal Print)
+        if (u_blendMode == 0) {
+          result = result * mix(vec3(1.0), u_inkColor1, alpha1);
+        } else if (u_blendMode == 1) {
+          result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor1) * alpha1);
+        } else if (u_blendMode == 2) {
+          result = 1.0 - (1.0 - result) * (1.0 - u_inkColor1 * alpha1);
+        } else {
+          result = mix(result, u_inkColor1, alpha1 * 0.85);
+        }
+
+        if (u_blendMode == 0) {
+          result = result * mix(vec3(1.0), u_inkColor2, alpha2);
+        } else if (u_blendMode == 1) {
+          result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor2) * alpha2);
+        } else if (u_blendMode == 2) {
+          result = 1.0 - (1.0 - result) * (1.0 - u_inkColor2 * alpha2);
+        } else {
+          result = mix(result, u_inkColor2, alpha2 * 0.85);
+        }
+
+        if (u_useThreeColors) {
+          if (u_blendMode == 0) {
+            result = result * mix(vec3(1.0), u_inkColor3, alpha3);
+          } else if (u_blendMode == 1) {
+            result = max(vec3(0.0), result - (vec3(1.0) - u_inkColor3) * alpha3);
+          } else {
+            result = 1.0 - (1.0 - result) * (1.0 - u_inkColor3 * alpha3);
+          }
         }
       }
 

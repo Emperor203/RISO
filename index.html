@@ -144,10 +144,44 @@
               <div class="handle-arrow right">▶</div>
             </div>
           </div>
+
+          <!-- Authentic Japanese Hanko & Studio Stamps Overlay -->
+          <div class="stamps-marks-overlay" id="stampsMarksOverlay">
+            <!-- 4 Corner Registration Crosshairs -->
+            <div class="reg-cross reg-tl" id="markTL"></div>
+            <div class="reg-cross reg-tr" id="markTR"></div>
+            <div class="reg-cross reg-bl" id="markBL"></div>
+            <div class="reg-cross reg-br" id="markBR"></div>
+
+            <!-- Ink Calibration Density Wedges -->
+            <div class="density-wedge-bar" id="densityBar">
+              <span class="wedge-step w-100"></span>
+              <span class="wedge-step w-75"></span>
+              <span class="wedge-step w-50"></span>
+              <span class="wedge-step w-25"></span>
+            </div>
+
+            <!-- Japanese Master Hanko Seal (印) -->
+            <div class="hanko-seal-badge pos-bottom-right" id="hankoBadge">
+              <div class="hanko-inner">
+                <span class="hanko-char" id="hankoCharText">理想</span>
+              </div>
+            </div>
+
+            <!-- Studio Edition Stamp -->
+            <div class="studio-edition-stamp" id="studioEditionStamp">
+              <span class="stamp-label" id="stampLabelText">LIMITED EDITION</span>
+              <span class="stamp-num" id="stampNumText">№ 07/50</span>
+            </div>
+          </div>
         </div>
 
         <!-- Stage Bottom Controller -->
         <div class="stage-floating-bar">
+          <button class="float-btn accent-drum" id="btnQuickDrum" title="Изоляция слоёв (Барабаны)">
+            ● ВСЕ СЛОИ
+          </button>
+          <div class="separator-v"></div>
           <button class="float-btn" id="btnZoomOut" title="Отдалить">-</button>
           <span class="zoom-level" id="zoomText">FIT</span>
           <button class="float-btn" id="btnZoomIn" title="Приблизить">+</button>
@@ -198,9 +232,9 @@
             <span class="tab-icon">[04]</span>
             <span class="tab-title">Тон</span>
           </button>
-          <button class="tab-btn" data-tab="text">
+          <button class="tab-btn" data-tab="stamps">
             <span class="tab-icon">[05]</span>
-            <span class="tab-title">Текст</span>
+            <span class="tab-title">Штампы</span>
           </button>
         </nav>
 
@@ -401,8 +435,22 @@
           </div>
         </div>
 
-        <!-- Tab 3: Барабаны красок (Ink Drums & Palettes) -->
+        <!-- Tab 3: Барабаны красок и Слои (Ink Drums & Layers) -->
         <div class="tab-panel" id="tab-colors">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Изоляция слоёв (Барабаны)</span>
+              <span class="section-desc">DRUM PLATES</span>
+            </div>
+            <div class="drum-plates-bar" id="drumPlatesBar">
+              <button class="drum-pill active" data-drum="0">● ВСЕ СЛОИ</button>
+              <button class="drum-pill" data-drum="1" id="drumPill1">① РОЗОВЫЙ</button>
+              <button class="drum-pill" data-drum="2" id="drumPill2">② СИНИЙ</button>
+              <button class="drum-pill" data-drum="3" id="drumPill3" style="display:none;">③ ЖЁЛТЫЙ</button>
+              <button class="drum-pill" data-drum="4">◐ СТЕНСИЛ (Ч/Б)</button>
+            </div>
+          </div>
+
           <div class="panel-section">
             <div class="section-header">
               <span class="section-title">Официальные палитры RISO</span>
@@ -537,16 +585,106 @@
           </div>
         </div>
 
-        <!-- Tab 5: Текст и Штамп (По желанию) -->
-        <div class="tab-panel" id="tab-text">
+        <!-- Tab 5: Аутентичные Штампы и Метки (Hanko, Stamps & Typography) -->
+        <div class="tab-panel" id="tab-stamps">
+          <!-- Hanko Japanese Master Seal -->
           <div class="panel-section">
             <div class="section-header">
-              <span class="section-title">Типографика поверх фото</span>
-              <span class="section-desc">OPTIONAL OVERLAY</span>
+              <span class="section-title">⛩️ Японская печать мастера (Hanko 印)</span>
+              <span class="section-desc">RED CINNABAR SEAL</span>
+            </div>
+            
+            <div class="toggle-row">
+              <label for="enableHankoToggle">Красная печать Hanko 印</label>
+              <input type="checkbox" id="enableHankoToggle" class="switch" checked>
+            </div>
+
+            <div class="control-row mt-12">
+              <label>Иероглиф печати (Кандзи)</label>
+              <div class="stamp-chip-group" id="hankoKanjiChips">
+                <button class="chip-btn active" data-kanji="理想">理想 (RISO)</button>
+                <button class="chip-btn" data-kanji="印">印 (Hanko)</button>
+                <button class="chip-btn" data-kanji="版画">版画 (Print)</button>
+                <button class="chip-btn" data-kanji="東京">東京 (Tokyo)</button>
+              </div>
+            </div>
+
+            <div class="control-row">
+              <label for="hankoShape">Форма оттиска</label>
+              <select id="hankoShape" class="select-box">
+                <option value="square" selected>Квадратная (Традиционная)</option>
+                <option value="circle">Круглая (Имперская)</option>
+              </select>
+            </div>
+
+            <div class="control-row">
+              <label for="hankoPosition">Расположение печати</label>
+              <select id="hankoPosition" class="select-box">
+                <option value="bottom-right" selected>Снизу справа</option>
+                <option value="bottom-left">Снизу слева</option>
+                <option value="top-right">Сверху справа</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Studio & Limited Edition Stamps -->
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">🏷️ Штампы тиража и лаборатории</span>
+              <span class="section-desc">EDITION & QC BADGES</span>
             </div>
 
             <div class="toggle-row">
-              <label for="enableTextOverlay">Включить текст</label>
+              <label for="enableStampToggle">Винтажный штамп студии</label>
+              <input type="checkbox" id="enableStampToggle" class="switch" checked>
+            </div>
+
+            <div class="control-row mt-12">
+              <label>Тип штампа</label>
+              <div class="stamp-chip-group" id="stampTypeChips">
+                <button class="chip-btn active" data-stamp="limited">LIMITED EDITION</button>
+                <button class="chip-btn" data-stamp="tokyo">TOKYO PRINT LAB</button>
+                <button class="chip-btn" data-stamp="sample">SAMPLE ARCHIVE</button>
+                <button class="chip-btn" data-stamp="qc">PASSED QC 済</button>
+              </div>
+            </div>
+
+            <div class="control-row">
+              <label for="stampNumberInput">Номер тиража / Текст</label>
+              <div class="input-with-action">
+                <input type="text" id="stampNumberInput" class="text-input" value="№ 07/50">
+                <button class="chip-btn icon-only" id="btnRandomStampNum" title="Случайный номер тиража">🎲</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registration Marks & Calibration -->
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">📐 Приводные метки печати</span>
+              <span class="section-desc">REGISTRATION MARKS</span>
+            </div>
+
+            <div class="toggle-row">
+              <label for="enableRegMarksToggle">Угловые кресты совмещения (+ по углам)</label>
+              <input type="checkbox" id="enableRegMarksToggle" class="switch" checked>
+            </div>
+
+            <div class="toggle-row mt-12">
+              <label for="enableDensityToggle">Шкала плотности краски (Density Wedges)</label>
+              <input type="checkbox" id="enableDensityToggle" class="switch" checked>
+            </div>
+          </div>
+
+          <!-- Typography Overlay -->
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">✍️ Типографика поверх фото</span>
+              <span class="section-desc">POSTER TEXT</span>
+            </div>
+
+            <div class="toggle-row">
+              <label for="enableTextOverlay">Включить текст постера</label>
               <input type="checkbox" id="enableTextOverlay" class="switch">
             </div>
 

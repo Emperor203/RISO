@@ -534,6 +534,261 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Drum Plates Isolation (Слои печати / Барабаны)
+   -------------------------------------------------------------------------- */
+.drum-plates-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
+}
+
+.drum-pill {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-line);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.drum-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.drum-pill.active {
+  background: rgba(0, 195, 255, 0.16);
+  border-color: #00C3FF;
+  color: #00C3FF;
+  box-shadow: 0 0 10px rgba(0, 195, 255, 0.35);
+}
+
+.float-btn.accent-drum {
+  background: rgba(0, 195, 255, 0.14);
+  color: #00C3FF;
+  border: 1px solid rgba(0, 195, 255, 0.4);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   Japanese Hanko Seal, Studio Stamps & Registration Marks Overlay
+   -------------------------------------------------------------------------- */
+.stamps-marks-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 15;
+}
+
+/* Corner Registration Crosshairs (+) */
+.reg-cross {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+
+.reg-cross::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #0055b8;
+  transform: translateY(-50%);
+}
+
+.reg-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  background: #0055b8;
+  transform: translateX(-50%);
+}
+
+.reg-cross.reg-tl { top: 8px; left: 8px; }
+.reg-cross.reg-tr { top: 8px; right: 8px; }
+.reg-cross.reg-bl { bottom: 8px; left: 8px; }
+.reg-cross.reg-br { bottom: 8px; right: 8px; }
+
+/* Density Wedge Scale */
+.density-wedge-bar {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.wedge-step {
+  width: 5px;
+  height: 12px;
+  border: 0.5px solid rgba(0, 0, 0, 0.35);
+  display: block;
+}
+
+.wedge-step.w-100 { background: #0055b8; }
+.wedge-step.w-75  { background: rgba(0, 85, 184, 0.75); }
+.wedge-step.w-50  { background: rgba(0, 85, 184, 0.50); }
+.wedge-step.w-25  { background: rgba(0, 85, 184, 0.25); }
+
+/* Japanese Master Hanko Seal (印) */
+.hanko-seal-badge {
+  position: absolute;
+  z-index: 16;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.hanko-seal-badge.pos-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.hanko-seal-badge.pos-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+
+.hanko-seal-badge.pos-top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.hanko-inner {
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #d32f2f;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(211, 47, 47, 0.08);
+  box-shadow: inset 0 0 5px rgba(211, 47, 47, 0.25);
+  transform: rotate(-3.5deg);
+}
+
+.hanko-seal-badge.round-seal .hanko-inner {
+  border-radius: 50%;
+  outline: 1.5px dashed #d32f2f;
+  outline-offset: -3.5px;
+  transform: rotate(2deg);
+}
+
+.hanko-char {
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", "Noto Serif JP", serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #d32f2f;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-shadow: 0.5px 0.5px 0 rgba(180, 20, 20, 0.4);
+}
+
+/* Studio Edition Stamp */
+.studio-edition-stamp {
+  position: absolute;
+  bottom: 16px;
+  left: 20px;
+  z-index: 15;
+  display: inline-flex;
+  flex-direction: column;
+  padding: 3px 7px;
+  border: 1.5px dashed rgba(26, 28, 35, 0.8);
+  background: rgba(255, 255, 255, 0.25);
+  mix-blend-mode: multiply;
+  transform: rotate(1.2deg);
+  pointer-events: none;
+}
+
+.studio-edition-stamp .stamp-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #1a1c23;
+  line-height: 1.2;
+}
+
+.studio-edition-stamp .stamp-num {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #d32f2f;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+/* Chip Groups & Action Inputs for Tab 5 */
+.stamp-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-line);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.chip-btn.active {
+  background: rgba(255, 42, 133, 0.18);
+  border-color: var(--riso-pink);
+  color: var(--riso-pink);
+}
+
+.input-with-action {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.input-with-action .text-input {
+  flex: 1;
+}
+
+.chip-btn.icon-only {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
    Sidebar Console (Industrial Instrument Panel)
    -------------------------------------------------------------------------- */
 .control-sidebar {
