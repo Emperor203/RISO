@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISO LAB // Цифровой Трафаретный Станок и Ризограф</title>
+  <meta name="description" content="Аутентичная эмуляция трафаретной печати, ризографа и полутонового растра.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Hardware Studio Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-badge">RISO</span>
+          <span class="brand-title">PRINT STUDIO</span>
+        </div>
+        <div class="studio-status">
+          <span class="status-dot"></span>
+          <span>ONLINE // 400 DPI</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <!-- Technical Preset Stepper -->
+        <div class="quick-presets" id="quickDemos">
+          <button class="preset-pill active" data-preset="sunflower">SUNFLOWER</button>
+          <button class="preset-pill" data-preset="retro80">80-E RISO</button>
+          <button class="preset-pill" data-preset="fuji">TOKYO ZINE</button>
+          <button class="preset-pill" data-preset="portrait">PORTRAIT</button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <label class="btn btn-primary" title="Загрузить собственное фото">
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Загрузить фото</span>
+        </label>
+
+        <button class="btn" id="btnCamera" title="Сделать снимок или запустить живой ризограф с веб-камеры">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Камера</span>
+        </button>
+
+        <button class="btn" id="btnResetApp" title="Сбросить все настройки в исходное состояние (Ризограф)">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>Сброс</span>
+        </button>
+
+        <button class="btn" id="btnScanAnim" title="Анимация оптического сканирования">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Сканер</span>
+        </button>
+
+        <button class="btn" id="btnCompare" title="Сравнение До / После">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path>
+          </svg>
+          <span>Сравнить</span>
+        </button>
+
+        <div class="dropdown">
+          <button class="btn" id="btnExportMenu">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Экспорт</span>
+          </button>
+          <div class="dropdown-menu" id="exportDropdown">
+            <button class="dropdown-item" id="btnDownloadPNG">
+              <strong>PNG (300 DPI)</strong>
+              <span>Высокое разрешение для печати</span>
+            </button>
+            <button class="dropdown-item" id="btnDownloadJPG">
+              <strong>JPG Оптимизированный</strong>
+              <span>Для веба и портфолио</span>
+            </button>
+            <button class="dropdown-item" id="btnCopyClipboard">
+              <strong>Копировать в буфер</strong>
+              <span>Быстрая вставка в графические редакторы</span>
+            </button>
+            <button class="dropdown-item" id="btnRecordScanVideo">
+              <strong>Запись сканера (WebM)</strong>
+              <span>Анимация прохода барабана</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Studio Workspace -->
+    <main class="app-workspace">
+      <!-- Cutting Mat Light Table -->
+      <section class="canvas-stage" id="canvasStage">
+        <div class="stage-overlay-notice" id="dropNotice">
+          <div class="drop-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>ПЕРЕТАЩИТЕ ФОТО СЮДА ИЛИ НАЖМИТЕ CTRL+V</p>
+          </div>
+        </div>
+
+        <div class="canvas-paper-wrapper" id="paperWrapper">
+          <canvas id="glCanvas"></canvas>
+          <canvas id="exportCanvas" style="display:none;"></canvas>
+          
+          <!-- Scanner bar optical head -->
+          <div class="scanner-bar" id="scannerBar">
+            <div class="scanner-laser"></div>
+            <div class="scanner-head">
+              <span class="scanner-tag">SCANNER HEAD // 400 DPI MASTER</span>
+            </div>
+          </div>
+
+          <!-- Split Compare Slider overlay -->
+          <div class="split-slider-container" id="splitSliderContainer">
+            <div class="split-slider-handle" id="splitHandle">
+              <div class="handle-arrow left">◀</div>
+              <div class="handle-line"></div>
+              <div class="handle-arrow right">▶</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stage Bottom Controller -->
+        <div class="stage-floating-bar">
+          <button class="float-btn" id="btnZoomOut" title="Отдалить">-</button>
+          <span class="zoom-level" id="zoomText">FIT</span>
+          <button class="float-btn" id="btnZoomIn" title="Приблизить">+</button>
+          <button class="float-btn" id="btnZoomFit" title="Авто-масштаб">FIT</button>
+          <div class="separator-v"></div>
+          <button class="float-btn" id="btnRandomize" title="Случайная комбинация параметров">
+            RANDOM
+          </button>
+        </div>
+      </section>
+
+      <!-- Sidebar Console (Industrial Panel) -->
+      <aside class="control-sidebar">
+        <!-- Technical Tabs -->
+        <nav class="sidebar-tabs">
+          <button class="tab-btn active" data-tab="effect">
+            <span class="tab-icon">[01]</span>
+            <span class="tab-title">Режим</span>
+          </button>
+          <button class="tab-btn" data-tab="riso">
+            <span class="tab-icon">[02]</span>
+            <span class="tab-title">Сдвиг</span>
+          </button>
+          <button class="tab-btn" data-tab="colors">
+            <span class="tab-icon">[03]</span>
+            <span class="tab-title">Краски</span>
+          </button>
+          <button class="tab-btn" data-tab="tone">
+            <span class="tab-icon">[04]</span>
+            <span class="tab-title">Тон</span>
+          </button>
+          <button class="tab-btn" data-tab="text">
+            <span class="tab-icon">[05]</span>
+            <span class="tab-title">Текст</span>
+          </button>
+        </nav>
+
+        <!-- Tab 1: Режимы печати (Print Modes) -->
+        <div class="tab-panel active" id="tab-effect">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Алгоритм растрирования</span>
+              <span class="section-desc">ENGINE</span>
+            </div>
+            
+            <div class="effect-cards-grid">
+              <div class="effect-card active" data-mode="riso">
+                <div class="effect-card-preview riso-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Ризограф</span>
+                  <span class="card-tag">DUAL DRUM</span>
+                </div>
+              </div>
+
+              <div class="effect-card" data-mode="newspaper">
+                <div class="effect-card-preview newspaper-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Газета</span>
+                  <span class="card-tag">NEWSPRINT</span>
+                </div>
+              </div>
+
+              <div class="effect-card" data-mode="halftone">
+                <div class="effect-card-preview halftone-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Растр</span>
+                  <span class="card-tag">DOT SCREEN</span>
+                </div>
+              </div>
+
+              <div class="effect-card" data-mode="engraving">
+                <div class="effect-card-preview engraving-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Гравюра</span>
+                  <span class="card-tag">LINE SCREEN</span>
+                </div>
+              </div>
+
+              <div class="effect-card" data-mode="dither">
+                <div class="effect-card-preview dither-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Пикселятор</span>
+                  <span class="card-tag">8-BIT DITHER</span>
+                </div>
+              </div>
+
+              <div class="effect-card" data-mode="cmyk">
+                <div class="effect-card-preview cmyk-thumb"></div>
+                <div class="effect-card-info">
+                  <span class="card-name">Скринпринт</span>
+                  <span class="card-tag">CMYK ROSETTE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlight Misregistration Slider -->
+          <div class="panel-section highlight-box">
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="shiftAmountMain">Смещение слоёв (Misregistration)</label>
+                <span class="value-badge" id="shiftValMain">38%</span>
+              </div>
+              <input type="range" id="shiftAmountMain" min="0" max="100" value="38" class="range-slider accent-pink">
+              <p class="slider-hint">Механический сдвиг между проходами барабана краски</p>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Стили оттиска</span>
+              <span class="section-desc">PRESETS</span>
+            </div>
+            <div class="style-tags">
+              <button class="style-tag active" data-style-preset="classic-riso">80s Riso Pop</button>
+              <button class="style-tag" data-style-preset="tokyo-zine">Tokyo Street Zine</button>
+              <button class="style-tag" data-style-preset="cyber-punk">Cyber Halftone</button>
+              <button class="style-tag" data-style-preset="vintage-press">Press 1974</button>
+              <button class="style-tag" data-style-preset="dark-ink">Noir Stencil</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Детальный сдвиг и растр (Registration & Screening) -->
+        <div class="tab-panel" id="tab-riso">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Точная юстировка барабанов</span>
+              <span class="section-desc">ALIGNMENT</span>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="shiftX">Смещение по X</label>
+                <span class="value-badge" id="shiftXVal">+6px</span>
+              </div>
+              <input type="range" id="shiftX" min="-30" max="30" value="6" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="shiftY">Смещение по Y</label>
+                <span class="value-badge" id="shiftYVal">-4px</span>
+              </div>
+              <input type="range" id="shiftY" min="-30" max="30" value="-4" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="shiftRotation">Поворот барабана</label>
+                <span class="value-badge" id="shiftRotVal">0.6°</span>
+              </div>
+              <input type="range" id="shiftRotation" min="-3" max="3" step="0.1" value="0.6" class="range-slider">
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Геометрия растра</span>
+              <span class="section-desc">SCREENING</span>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="dotFrequency">Частота растра (LPI)</label>
+                <span class="value-badge" id="dotFreqVal">28 lpi</span>
+              </div>
+              <input type="range" id="dotFrequency" min="8" max="75" value="28" class="range-slider">
+              <div class="slider-markers">
+                <span>Крупный растр</span>
+                <span>Мелкий растр</span>
+              </div>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="screenAngle">Угол поворота растра</label>
+                <span class="value-badge" id="screenAngleVal">45°</span>
+              </div>
+              <input type="range" id="screenAngle" min="0" max="90" value="45" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <label for="dotShape">Форма растровой точки</label>
+              <select id="dotShape" class="select-box">
+                <option value="round" selected>Круглые точки (Classic Halftone)</option>
+                <option value="line">Линии (Engraving Lines)</option>
+                <option value="diamond">Ромбы (Diamond Screen)</option>
+                <option value="dither">Случайный дизеринг (Bayer Dither)</option>
+                <option value="cross">Перекрёстный растр (Cross-Hatch)</option>
+              </select>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="dotSoftness">Сглаживание краёв точек</label>
+                <span class="value-badge" id="dotSoftVal">60%</span>
+              </div>
+              <input type="range" id="dotSoftness" min="10" max="100" value="60" class="range-slider">
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Фактура бумаги и красок</span>
+              <span class="section-desc">TEXTURE</span>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="paperGrain">Зернистость бумаги</label>
+                <span class="value-badge" id="paperGrainVal">25%</span>
+              </div>
+              <input type="range" id="paperGrain" min="0" max="100" value="25" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="inkBleed">Растекание чернил (Ink Bleed)</label>
+                <span class="value-badge" id="inkBleedVal">15%</span>
+              </div>
+              <input type="range" id="inkBleed" min="0" max="100" value="15" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="vignette">Виньетка по краям листа</label>
+                <span class="value-badge" id="vignetteVal">12%</span>
+              </div>
+              <input type="range" id="vignette" min="0" max="100" value="12" class="range-slider">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Барабаны красок (Ink Drums & Palettes) -->
+        <div class="tab-panel" id="tab-colors">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Официальные палитры RISO</span>
+              <span class="section-desc">SOY INK</span>
+            </div>
+
+            <div class="palette-presets-list" id="palettePresetsList">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Слоты барабанов</span>
+              <span class="section-desc">DRUMS</span>
+            </div>
+
+            <div class="ink-pickers-list">
+              <div class="ink-row">
+                <span class="ink-dot" id="inkDot1" style="background: #FF2A85;"></span>
+                <div class="ink-info">
+                  <span class="ink-name">Барабан 1 // S-4254</span>
+                  <span class="ink-code" id="inkCode1">Fluorescent Pink (#FF2A85)</span>
+                </div>
+                <input type="color" id="inkColor1" value="#FF2A85" class="color-circle-input">
+              </div>
+
+              <div class="ink-row">
+                <span class="ink-dot" id="inkDot2" style="background: #0055B8;"></span>
+                <div class="ink-info">
+                  <span class="ink-name">Барабан 2 // S-4253</span>
+                  <span class="ink-code" id="inkCode2">Federal Blue (#0055B8)</span>
+                </div>
+                <input type="color" id="inkColor2" value="#0055B8" class="color-circle-input">
+              </div>
+
+              <div class="ink-row" id="inkRow3" style="display:none;">
+                <span class="ink-dot" id="inkDot3" style="background: #FFE800;"></span>
+                <div class="ink-info">
+                  <span class="ink-name">Барабан 3 // S-4250</span>
+                  <span class="ink-code" id="inkCode3">Sunflower Yellow (#FFE800)</span>
+                </div>
+                <input type="color" id="inkColor3" value="#FFE800" class="color-circle-input">
+              </div>
+
+              <div class="ink-row">
+                <span class="ink-dot" id="inkDotPaper" style="background: #FAF6EE;"></span>
+                <div class="ink-info">
+                  <span class="ink-name">Бумага // 240g Cotton</span>
+                  <span class="ink-code" id="inkCodePaper">Warm Cream (#FAF6EE)</span>
+                </div>
+                <input type="color" id="inkColorPaper" value="#FAF6EE" class="color-circle-input">
+              </div>
+            </div>
+
+            <div class="toggle-row mt-12">
+              <label for="threeColorToggle">Использовать 3 барабана</label>
+              <input type="checkbox" id="threeColorToggle" class="switch">
+            </div>
+
+            <div class="toggle-row mt-12">
+              <label for="separationToggle">CMYK разделение (vs Дуотон)</label>
+              <input type="checkbox" id="separationToggle" class="switch">
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="inkDensity">Плотность оттиска (Opacity)</label>
+                <span class="value-badge" id="inkDensityVal">95%</span>
+              </div>
+              <input type="range" id="inkDensity" min="30" max="100" value="95" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <label for="blendMode">Оптическое наложение</label>
+              <select id="blendMode" class="select-box">
+                <option value="multiply" selected>Multiply (Реалистичное впитывание)</option>
+                <option value="subtractive">Subtractive (CMYK синтез)</option>
+                <option value="screen">Screen (Свечение)</option>
+                <option value="overlay">Overlay (Высокий контраст)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Тон и Экспозиция (Tone & Adjustments) -->
+        <div class="tab-panel" id="tab-tone">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Экспозиция оригинала</span>
+              <span class="section-desc">EXPOSURE</span>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="contrast">Контраст (Contrast)</label>
+                <span class="value-badge" id="contrastVal">+25%</span>
+              </div>
+              <input type="range" id="contrast" min="-50" max="100" value="25" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="brightness">Яркость (Brightness)</label>
+                <span class="value-badge" id="brightnessVal">0%</span>
+              </div>
+              <input type="range" id="brightness" min="-50" max="50" value="0" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="threshold">Отсечение светов (Threshold)</label>
+                <span class="value-badge" id="threshVal">50%</span>
+              </div>
+              <input type="range" id="threshold" min="10" max="90" value="50" class="range-slider">
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="gamma">Гамма кривая</label>
+                <span class="value-badge" id="gammaVal">1.05</span>
+              </div>
+              <input type="range" id="gamma" min="0.5" max="2.2" step="0.05" value="1.05" class="range-slider">
+            </div>
+
+            <div class="toggle-row mt-12">
+              <label for="invertToggle">Инвертировать негатив</label>
+              <input type="checkbox" id="invertToggle" class="switch">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Текст и Штамп (По желанию) -->
+        <div class="tab-panel" id="tab-text">
+          <div class="panel-section">
+            <div class="section-header">
+              <span class="section-title">Типографика поверх фото</span>
+              <span class="section-desc">OPTIONAL OVERLAY</span>
+            </div>
+
+            <div class="toggle-row">
+              <label for="enableTextOverlay">Включить текст</label>
+              <input type="checkbox" id="enableTextOverlay" class="switch">
+            </div>
+
+            <div class="control-row mt-12">
+              <label for="posterTitle">Основной заголовок</label>
+              <input type="text" id="posterTitle" class="text-input" value="80-e">
+            </div>
+
+            <div class="control-row">
+              <label for="posterSubtitle">Подзаголовок</label>
+              <input type="text" id="posterSubtitle" class="text-input" value="РИЗОГРАФ">
+            </div>
+
+            <div class="control-row">
+              <label for="posterTag">Штамп / Серийный номер</label>
+              <input type="text" id="posterTag" class="text-input" value="PRINTED BY RISOGRAPH // 002">
+            </div>
+
+            <div class="control-row">
+              <label for="posterPosition">Расположение</label>
+              <select id="posterPosition" class="select-box">
+                <option value="bottom" selected>Снизу (Постер)</option>
+                <option value="top">Сверху</option>
+                <option value="center">По центру</option>
+                <option value="split">Сверху и снизу</option>
+              </select>
+            </div>
+
+            <div class="control-row">
+              <div class="label-with-val">
+                <label for="fontSize">Размер кегля</label>
+                <span class="value-badge" id="fontSizeVal">72px</span>
+              </div>
+              <input type="range" id="fontSize" min="28" max="120" value="72" class="range-slider">
+            </div>
+
+            <div class="toggle-row mt-12">
+              <label for="textChromatic">3D Хроматическая тень</label>
+              <input type="checkbox" id="textChromatic" class="switch" checked>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Notification Toast -->
+    <div class="notification-toast" id="toastMsg">ГОТОВО</div>
+
+    <!-- Live Camera Floating Bar (Active during live streaming) -->
+    <div class="live-camera-pill" id="liveCameraPill">
+      <span class="live-dot"></span>
+      <span>LIVE КАМЕРА</span>
+      <button class="live-stop-btn" id="btnStopLive">ЗАФИКСИРОВАТЬ КАДР</button>
+    </div>
+
+    <!-- Web Camera Capture Modal -->
+    <div class="modal-backdrop" id="cameraModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span class="logo-badge">CAM</span>
+            <span>ОПТИЧЕСКИЙ ЗАХВАТ // ВЕБ-КАМЕРА</span>
+          </div>
+          <button class="modal-close-btn" id="btnCloseCamera" title="Закрыть">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="camera-preview-container">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            <div class="camera-grid-overlay">
+              <div class="camera-corner tl"></div>
+              <div class="camera-corner tr"></div>
+              <div class="camera-corner bl"></div>
+              <div class="camera-corner br"></div>
+              <div class="camera-crosshair">+</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" id="btnSwitchCamera" title="Переключить фронтальную/заднюю камеру">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span>Сменить</span>
+          </button>
+          <button class="btn btn-primary" id="btnCapturePhoto">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Сделать снимок</span>
+          </button>
+          <button class="btn" id="btnLiveStream" title="Транслировать живой поток камеры через шейдер">
+            <span class="live-dot" style="margin-right:2px;"></span>
+            <span>Живой режим (Live)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="shaders.js"></script>
+  <script src="presets.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
