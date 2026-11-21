@@ -16,10 +16,8 @@ class handler(BaseHTTPRequestHandler):
                 message = update["message"]
                 chat_id = message["chat"]["id"]
 
-                # Determine the Vercel deployed URL
-                forwarded_host = self.headers.get("x-forwarded-host")
-                host = forwarded_host or self.headers.get("host") or ""
-                app_url = f"https://{host}" if host else "https://emperor203.github.io/RISO/"
+                # Production Vercel URL
+                app_url = "https://riso-studio-emperor203s-projects.vercel.app"
 
                 reply_text = (
                     "🖨️ *RISO PRINT STUDIO // ТРАФАРЕТНЫЙ СТАНОК*\n\n"
