@@ -37,6 +37,9 @@ class RisoApp {
     this.panY = 0;
     this.isDrawerCollapsed = false;
     this.isCameraMirrored = false;
+    this.currentExportBlob = null;
+    this.currentExportDataUrl = null;
+    this.currentExportFilename = 'riso_art.png';
 
     // Interactive Modes
     this.isComparing = false;
@@ -1762,6 +1765,48 @@ class RisoApp {
     });
 
     // Export Actions
+    const btnSaveModal = document.getElementById('btnSaveToPhoneModal');
+    if (btnSaveModal) {
+      btnSaveModal.addEventListener('click', () => {
+        this.openSavePhotoModal('png');
+      });
+    }
+
+    const btnQuickSave = document.getElementById('btnQuickSaveMobile');
+    if (btnQuickSave) {
+      btnQuickSave.addEventListener('click', () => {
+        this.openSavePhotoModal('png');
+      });
+    }
+
+    const btnCloseSave = document.getElementById('btnCloseSaveModal');
+    if (btnCloseSave) {
+      btnCloseSave.addEventListener('click', () => {
+        this.closeSavePhotoModal();
+      });
+    }
+
+    const btnSendTg = document.getElementById('btnSendToTelegramChat');
+    if (btnSendTg) {
+      btnSendTg.addEventListener('click', () => {
+        this.sendPhotoToTelegramChat();
+      });
+    }
+
+    const btnShare = document.getElementById('btnNativeShare');
+    if (btnShare) {
+      btnShare.addEventListener('click', () => {
+        this.shareNativeImage();
+      });
+    }
+
+    const btnDirectDl = document.getElementById('btnDirectFileDownload');
+    if (btnDirectDl) {
+      btnDirectDl.addEventListener('click', () => {
+        this.triggerDirectDownload();
+      });
+    }
+
     document.getElementById('btnDownloadPNG').addEventListener('click', () => {
       this.exportImage('png');
     });
@@ -2103,9 +2148,9 @@ class RisoApp {
   }
 
   // --------------------------------------------------------------------------
-  // Exporting
+  // Exporting & Mobile Phone Save
   // --------------------------------------------------------------------------
-  exportImage(format = 'png') {
+  openSavePhotoModal(format = 'png') {
     const wasComparing = this.isComparing;
     if (wasComparing) {
       this.splitPosition = -1.0;
@@ -2119,22 +2164,167 @@ class RisoApp {
       ? this.renderCompositeExportCanvas()
       : this.glCanvas;
 
+    const dataUrl = exportTarget.toDataURL(mime, 0.95);
+    this.currentExportDataUrl = dataUrl;
+
     exportTarget.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      this.showToast(`Сохранено: ${filename}`);
+      this.currentExportBlob = blob;
+      this.currentExportFilename = filename;
+
+      // Update Preview Image in Save Modal
+      const imgPreview = document.getElementById('saveImagePreview');
+      if (imgPreview) {
+        imgPreview.src = dataUrl;
+      }
+
+      // Check Telegram WebApp user
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      const btnTg = document.getElementById('btnSendToTelegramChat');
+      if (btnTg) {
+        if (tgUser && tgUser.id) {
+          btnTg.style.display = 'inline-flex';
+          const tgText = document.getElementById('telegramSendBtnText');
+          if (tgText) tgText.textContent = `Отправить в чат @${tgUser.username || tgUser.first_name || 'мне'} 📲`;
+        } else {
+          btnTg.style.display = 'none';
+        }
+      }
+
+      const saveModal = document.getElementById('savePhotoModal');
+      if (saveModal) {
+        saveModal.classList.add('active');
+      }
 
       if (wasComparing) {
         this.splitPosition = 0.5;
         this.render();
       }
     }, mime, 0.95);
+  }
+
+  closeSavePhotoModal() {
+    const saveModal = document.getElementById('savePhotoModal');
+    if (saveModal) {
+      saveModal.classList.remove('active');
+    }
+  }
+
+  async sendPhotoToTelegramChat() {
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (!tgUser || !tgUser.id) {
+      this.showToast('Откройте приложение внутри Telegram, чтобы отправить в чат');
+      return;
+    }
+
+    if (!this.currentExportDataUrl) {
+      this.showToast('Генерируем изображение...');
+      return;
+    }
+
+    const btn = document.getElementById('btnSendToTelegramChat');
+    const origText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Отправка в чат Telegram... ⏳';
+    }
+
+    try {
+      this.showToast('Отправка оттиска в ваш чат... ✈️');
+      const payload = {
+        chat_id: tgUser.id,
+        photo_base64: this.currentExportDataUrl,
+        caption: "🎨 Ваш ризограф-оттиск готовой работы!\n\nНажмите на фото ➔ три точки (⋮) ➔ «Сохранить в галерею» 📲"
+      };
+
+      let resp = await fetch('/api/send_photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        // Fallback to /api/webhook
+        resp = await fetch('/api/webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      const result = await resp.json();
+      if (result.ok) {
+        this.triggerHaptic('notification');
+        this.showToast('✅ Оттиск отправлен вам в чат! Откройте его и сохраните в галерею 📲');
+      } else {
+        throw new Error(result.error || 'Server error');
+      }
+    } catch (err) {
+      console.warn('Send photo error:', err);
+      this.showToast('Не удалось отправить в чат. Зажмите фото пальцем ➔ Сохранить в Фото!');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+    }
+  }
+
+  async shareNativeImage() {
+    if (!this.currentExportBlob) return;
+
+    const file = new File([this.currentExportBlob], this.currentExportFilename || 'riso_art.png', {
+      type: this.currentExportBlob.type
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Riso Studio Print',
+          text: 'Мой ризограф-постер!'
+        });
+        this.triggerHaptic('notification');
+        this.showToast('Успешно отправлено! 📤');
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.warn('Share error:', e);
+          this.showToast('Зажмите фото пальцем ➔ Сохранить в Фото 📲');
+        }
+      }
+    } else {
+      this.showToast('Зажмите фото пальцем ➔ Сохранить в Фото 📲');
+    }
+  }
+
+  triggerDirectDownload() {
+    if (!this.currentExportBlob) return;
+    const url = URL.createObjectURL(this.currentExportBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.currentExportFilename || 'riso_art.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showToast('Файл скачан! 📁');
+  }
+
+  exportImage(format = 'png') {
+    // Open the comprehensive mobile save modal
+    this.openSavePhotoModal(format);
+
+    // If inside Telegram WebApp, automatically send photo to user's chat!
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (tgUser && tgUser.id) {
+      setTimeout(() => {
+        this.sendPhotoToTelegramChat();
+      }, 350);
+    } else {
+      // On regular browser, also trigger file download
+      setTimeout(() => {
+        this.triggerDirectDownload();
+      }, 350);
+    }
   }
 
   copyToClipboard() {
