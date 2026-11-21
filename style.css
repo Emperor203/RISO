@@ -524,6 +524,10 @@ body {
   background: var(--border-line);
 }
 
+.mobile-bar-item {
+  display: none;
+}
+
 /* --------------------------------------------------------------------------
    Sidebar Console (Industrial Instrument Panel)
    -------------------------------------------------------------------------- */
@@ -1211,8 +1215,487 @@ body {
   }
   .control-sidebar {
     width: 100%;
-    height: 350px;
+    flex: 1;
     border-left: none;
     border-top: 1px solid var(--border-line);
+  }
+}
+
+/* ==========================================================================
+   Mobile & Tablet Adaptive Layout (Telegram Mini App Optimized)
+   ========================================================================== */
+@media (max-width: 768px) {
+  html, body {
+    position: fixed;
+    width: 100%;
+    max-width: 100vw;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    touch-action: pan-y;
+  }
+
+  .app-container {
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    max-width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ------------------------------------------------------------------------
+     Mobile Header (2-Row Hardware Studio Bar)
+     ------------------------------------------------------------------------ */
+  .app-header {
+    height: auto;
+    min-height: auto;
+    padding: 6px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-line);
+    z-index: 60;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Row 1: Logo (Left) */
+  .header-left {
+    order: 1;
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .logo {
+    gap: 6px;
+  }
+
+  .logo-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    font-weight: 800;
+  }
+
+  .brand-title {
+    display: none; /* Hide 'PRINT STUDIO' text on mobile to avoid row overflow */
+  }
+
+  .studio-status {
+    display: none; /* Hide technical status text to free up room */
+  }
+
+  /* Row 1: Action Buttons (Right) */
+  .header-right {
+    order: 2;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .header-right .btn {
+    height: 28px;
+    padding: 0 7px;
+    font-size: 10px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .header-right .btn-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Upload Photo button: Show compact 'ФОТО' */
+  label.btn-primary {
+    padding: 0 8px;
+  }
+  label.btn-primary span {
+    display: none;
+  }
+  label.btn-primary::after {
+    content: 'ФОТО';
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* Camera button: Icon only on mobile */
+  #btnCamera {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+  #btnCamera span {
+    display: none;
+  }
+  #btnCamera::after {
+    display: none;
+  }
+
+  /* Reset button: Icon only */
+  #btnResetApp {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+  #btnResetApp span {
+    display: none;
+  }
+
+  /* Scan & Compare: Hidden from top header on mobile (moved to stage floating bar) */
+  #btnScanAnim, #btnCompare {
+    display: none;
+  }
+
+  #btnExportMenu {
+    padding: 0 8px;
+  }
+  #btnExportMenu span {
+    font-size: 10px;
+  }
+
+  /* Row 2: Presets Bar (Horizontal Scroll Carousel) */
+  .header-center {
+    order: 3;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .quick-presets {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 0;
+    border: none;
+    background: transparent;
+  }
+  .quick-presets::-webkit-scrollbar {
+    display: none;
+  }
+
+  .preset-pill {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    font-size: 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-line);
+    border-radius: var(--radius-xs);
+  }
+  .preset-pill.active {
+    background: var(--riso-pink);
+    border-color: var(--riso-pink);
+    color: #fff;
+  }
+
+  /* ------------------------------------------------------------------------
+     Mobile Workspace (Light Table + Drawer)
+     ------------------------------------------------------------------------ */
+  .app-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Stage: Upper Half */
+  .canvas-stage {
+    flex: 0 0 42vh;
+    height: 42vh;
+    min-height: 200px;
+    max-height: 44vh;
+    padding: 6px 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .canvas-stage::before {
+    font-size: 7.5px;
+    top: 4px;
+    left: 8px;
+    opacity: 0.25;
+  }
+
+  .canvas-paper-wrapper {
+    max-width: calc(100% - 12px);
+    max-height: calc(100% - 16px);
+    width: auto;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  }
+
+  #glCanvas {
+    max-width: 100% !important;
+    max-height: calc(42vh - 24px) !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block;
+  }
+
+  /* Floating Zoom / Random / Scan / Compare Bar */
+  .stage-floating-bar {
+    bottom: 4px;
+    padding: 2px 6px;
+    gap: 3px;
+    transform: translateX(-50%) scale(0.85);
+    background: rgba(13, 14, 18, 0.94);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+    max-width: 95%;
+    white-space: nowrap;
+    overflow-x: auto;
+  }
+
+  .float-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .zoom-level {
+    font-size: 9.5px;
+    min-width: 28px;
+  }
+
+  .mobile-bar-item {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ------------------------------------------------------------------------
+     Mobile Sidebar Console (Bottom Sheet / Panel)
+     ------------------------------------------------------------------------ */
+  .control-sidebar {
+    flex: 1;
+    width: 100%;
+    height: calc(58vh - 74px);
+    border-left: none;
+    border-top: 1px solid var(--border-line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-surface);
+    min-height: 0;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* 5 Tabs - Exactly 20% Each Across Full Mobile Width */
+  .sidebar-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    width: 100%;
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--border-line);
+    box-sizing: border-box;
+  }
+
+  .tab-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 1px;
+    min-height: 44px; /* Standard mobile touch target */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    box-sizing: border-box;
+  }
+
+  .tab-icon {
+    font-size: 8px;
+  }
+
+  .tab-title {
+    font-size: 9px;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  /* Scrollable Active Tab Content */
+  .tab-panel {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 10px 32px 10px;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Touch Sliders */
+  .range-slider {
+    height: 6px;
+    border-radius: 3px;
+    background: #252834;
+  }
+
+  .range-slider::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 2px solid #000;
+  }
+
+  .slider-header label {
+    font-size: 10px;
+  }
+  .slider-value {
+    font-size: 9.5px;
+  }
+
+  /* Effect Cards: 3 neat equal columns */
+  .effect-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .effect-card {
+    min-width: 0;
+    padding: 4px;
+    box-sizing: border-box;
+  }
+
+  .card-name {
+    font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-tag {
+    font-size: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Drum color buttons */
+  .drum-color-btn {
+    min-height: 38px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  /* Preset Palettes List */
+  .palettes-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .palette-item {
+    padding: 7px 10px;
+    min-height: 40px;
+  }
+
+  /* Export Menu as Bottom Sheet */
+  .dropdown.open .dropdown-menu {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    padding: 16px;
+    background: #14161c;
+    border: 1px solid var(--border-light);
+    border-bottom: none;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.9);
+    z-index: 500;
+    gap: 8px;
+    animation: slideUpMobile 0.2s ease-out;
+  }
+
+  @keyframes slideUpMobile {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .dropdown-item {
+    padding: 10px 12px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-line);
+    border-radius: var(--radius-xs);
+  }
+
+  /* Camera Modal Mobile Optimization */
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 94vh;
+    border-radius: 8px;
+  }
+
+  .camera-preview-container {
+    aspect-ratio: 4 / 3;
+    max-height: 42vh;
+  }
+
+  .modal-footer {
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 45%;
+    min-height: 40px;
+    justify-content: center;
+    font-size: 11px;
+  }
+
+  /* Live camera pill */
+  .live-camera-pill {
+    top: 84px;
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-title {
+    display: none; /* Only show RISO badge on ultra narrow screens */
+  }
+
+  #btnCamera::after {
+    content: 'КАМ';
   }
 }

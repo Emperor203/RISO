@@ -134,6 +134,7 @@ class RisoApp {
           tg.MainButton.textColor = '#ffffff';
           tg.MainButton.show();
           tg.MainButton.onClick(() => {
+            this.triggerHaptic('notification');
             this.exportImage('png');
           });
         }
@@ -141,6 +142,25 @@ class RisoApp {
         console.warn('Telegram WebApp init note:', e);
       }
     }
+  }
+
+  triggerHaptic(type = 'light') {
+    try {
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        const haptic = window.Telegram.WebApp.HapticFeedback;
+        if (type === 'impact') {
+          haptic.impactOccurred('medium');
+        } else if (type === 'heavy') {
+          haptic.impactOccurred('heavy');
+        } else if (type === 'selection') {
+          haptic.selectionChanged();
+        } else if (type === 'notification') {
+          haptic.notificationOccurred('success');
+        } else {
+          haptic.impactOccurred('light');
+        }
+      }
+    } catch (_) {}
   }
 
   // --------------------------------------------------------------------------
@@ -611,6 +631,7 @@ class RisoApp {
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        this.triggerHaptic('selection');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
@@ -622,6 +643,7 @@ class RisoApp {
     // Effect Cards Selection
     document.querySelectorAll('.effect-card').forEach(card => {
       card.addEventListener('click', () => {
+        this.triggerHaptic('selection');
         document.querySelectorAll('.effect-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
 
@@ -693,6 +715,7 @@ class RisoApp {
     // Quick presets top bar
     document.querySelectorAll('#quickDemos .preset-pill').forEach(pill => {
       pill.addEventListener('click', () => {
+        this.triggerHaptic('selection');
         document.querySelectorAll('#quickDemos .preset-pill').forEach(p => p.classList.remove('active'));
         pill.classList.add('active');
         this.loadPreset(pill.dataset.preset);
@@ -867,16 +890,29 @@ class RisoApp {
       if (this.state.enableText) reuploadWithText();
     });
 
-    // Scanner & Compare buttons
-    document.getElementById('btnScanAnim').addEventListener('click', () => {
+    // Scanner & Compare buttons (Desktop & Mobile)
+    const scanHandler = () => {
+      this.triggerHaptic('impact');
       this.triggerScannerAnimation();
-    });
-
-    document.getElementById('btnCompare').addEventListener('click', () => {
+    };
+    const compareHandler = () => {
+      this.triggerHaptic('impact');
       this.toggleCompareMode();
-    });
+    };
 
-    // Split Handle Mouse Drag
+    const btnScan = document.getElementById('btnScanAnim');
+    if (btnScan) btnScan.addEventListener('click', scanHandler);
+
+    const btnCompare = document.getElementById('btnCompare');
+    if (btnCompare) btnCompare.addEventListener('click', compareHandler);
+
+    const btnScanMob = document.getElementById('btnScanMobile');
+    if (btnScanMob) btnScanMob.addEventListener('click', scanHandler);
+
+    const btnCompareMob = document.getElementById('btnCompareMobile');
+    if (btnCompareMob) btnCompareMob.addEventListener('click', compareHandler);
+
+    // Split Handle Mouse & Touch Drag
     const onSplitMove = (clientX) => {
       const rect = this.glCanvas.getBoundingClientRect();
       const pos = Math.max(0.0, Math.min(1.0, (clientX - rect.left) / rect.width));
@@ -900,6 +936,22 @@ class RisoApp {
       this.isDraggingSplit = false;
     });
 
+    // Touch support for Split Slider
+    this.splitSlider.addEventListener('touchstart', (e) => {
+      this.isDraggingSplit = true;
+      if (e.touches && e.touches[0]) onSplitMove(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (this.isDraggingSplit && e.touches && e.touches[0]) {
+        onSplitMove(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      this.isDraggingSplit = false;
+    });
+
     // Zoom Buttons
     document.getElementById('btnZoomIn').addEventListener('click', () => {
       this.applyManualZoom(1.25);
@@ -913,6 +965,7 @@ class RisoApp {
 
     // Randomize Button
     document.getElementById('btnRandomize').addEventListener('click', () => {
+      this.triggerHaptic('impact');
       const p = RISO_PALETTES[Math.floor(Math.random() * RISO_PALETTES.length)];
       this.state.ink1 = p.ink1;
       this.state.ink2 = p.ink2;
@@ -1071,6 +1124,7 @@ class RisoApp {
     const resetBtn = document.getElementById('btnResetApp');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
+        this.triggerHaptic('heavy');
         this.resetToDefaults();
       });
     }
