@@ -296,6 +296,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  touch-action: none; /* Разрешает свободный pinch-to-zoom и панорамирование жестами */
 }
 
 /* Studio Mat Metric Scale Lines */
@@ -525,6 +526,10 @@ body {
 }
 
 .mobile-bar-item {
+  display: none;
+}
+
+.sheet-drawer-handle {
   display: none;
 }
 
@@ -1112,7 +1117,12 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); /* mirror selfie view */
+  transform: none; /* Естественное направление движения (налево -> налево) */
+  transition: transform 0.2s ease;
+}
+
+#cameraVideo.mirrored {
+  transform: scaleX(-1);
 }
 
 /* Viewfinder Crosshairs */
@@ -1412,14 +1422,14 @@ body {
     min-height: 0;
     min-width: 0;
     width: 100%;
+    position: relative;
   }
 
-  /* Stage: Upper Half */
+  /* Stage: Upper Half (expands full height when drawer is collapsed) */
   .canvas-stage {
     flex: 0 0 42vh;
     height: 42vh;
-    min-height: 200px;
-    max-height: 44vh;
+    min-height: 160px;
     padding: 6px 8px;
     overflow: hidden;
     position: relative;
@@ -1430,6 +1440,7 @@ body {
     min-height: 0;
     width: 100%;
     box-sizing: border-box;
+    transition: flex 0.26s cubic-bezier(0.2, 0.9, 0.3, 1), height 0.26s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
 
   .canvas-stage::before {
@@ -1449,6 +1460,7 @@ body {
     justify-content: center;
     margin: auto;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    transition: transform 0.15s ease-out;
   }
 
   #glCanvas {
@@ -1458,6 +1470,7 @@ body {
     height: auto !important;
     object-fit: contain !important;
     display: block;
+    transition: max-height 0.26s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
 
   /* Floating Zoom / Random / Scan / Compare Bar */
@@ -1473,11 +1486,19 @@ body {
     max-width: 95%;
     white-space: nowrap;
     overflow-x: auto;
+    z-index: 45;
   }
 
   .float-btn {
     padding: 3px 6px;
     font-size: 10px;
+  }
+
+  .float-btn.accent-toggle {
+    background: rgba(255, 42, 133, 0.18);
+    color: var(--riso-pink);
+    border: 1px solid rgba(255, 42, 133, 0.4);
+    font-weight: 700;
   }
 
   .zoom-level {
@@ -1491,10 +1512,10 @@ body {
   }
 
   /* ------------------------------------------------------------------------
-     Mobile Sidebar Console (Bottom Sheet / Panel)
+     Mobile Sidebar Console (Collapsible Bottom Sheet Drawer)
      ------------------------------------------------------------------------ */
   .control-sidebar {
-    flex: 1;
+    flex: 1 1 auto;
     width: 100%;
     height: calc(58vh - 74px);
     border-left: none;
@@ -1506,6 +1527,107 @@ body {
     min-height: 0;
     min-width: 0;
     box-sizing: border-box;
+    transition: all 0.26s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  /* Sheet Drawer Top Handle Bar */
+  .sheet-drawer-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px 6px 12px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-line);
+    cursor: pointer;
+    user-select: none;
+    touch-action: pan-y;
+    min-height: 34px;
+    transition: background 0.15s ease;
+  }
+
+  .sheet-drawer-handle:active {
+    background: var(--bg-elevated);
+  }
+
+  .sheet-handle-pill {
+    width: 38px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    margin-bottom: 3px;
+    transition: all 0.15s ease;
+  }
+
+  .sheet-drawer-handle:hover .sheet-handle-pill {
+    background: var(--riso-pink);
+  }
+
+  .sheet-handle-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  }
+
+  .sheet-handle-icon {
+    font-size: 8px;
+    color: var(--riso-pink);
+  }
+
+  /* ------------------------------------------------------------------------
+     COLLAPSED STATE: Bottom Sheet tucked away, Full-Screen Canvas View
+     ------------------------------------------------------------------------ */
+  .control-sidebar.collapsed {
+    flex: 0 0 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    overflow: hidden !important;
+    background: #0d0e12 !important;
+    border-top: 1px solid var(--riso-pink) !important;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.9) !important;
+  }
+
+  .control-sidebar.collapsed .sidebar-tabs,
+  .control-sidebar.collapsed .tab-panel {
+    display: none !important;
+  }
+
+  .control-sidebar.collapsed .sheet-drawer-handle {
+    background: #14161f;
+    border-bottom: none;
+    height: 100%;
+    padding: 4px 12px;
+  }
+
+  .control-sidebar.collapsed .sheet-handle-pill {
+    background: var(--riso-pink);
+    box-shadow: 0 0 8px rgba(255, 42, 133, 0.6);
+  }
+
+  .control-sidebar.collapsed .sheet-handle-text {
+    color: #fff;
+  }
+
+  /* Full-Screen Canvas Expansion */
+  .app-workspace.drawer-collapsed .canvas-stage {
+    flex: 1 1 auto !important;
+    height: calc(100% - 36px) !important;
+    max-height: calc(100% - 36px) !important;
+  }
+
+  .app-workspace.drawer-collapsed #glCanvas {
+    max-height: calc(100vh - 150px) !important;
+    max-height: calc(100dvh - 150px) !important;
+  }
+
+  .app-workspace.drawer-collapsed .stage-floating-bar {
+    bottom: 8px;
   }
 
   /* 5 Tabs - Exactly 20% Each Across Full Mobile Width */

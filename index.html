@@ -163,11 +163,23 @@
           <button class="float-btn mobile-bar-item" id="btnCompareMobile" title="Сравнить До / После">
             ◧ ДО/ПОСЛЕ
           </button>
+          <button class="float-btn mobile-bar-item accent-toggle" id="btnToggleDrawer" title="Скрыть/показать панель настроек">
+            ▼ СВЕРНУТЬ
+          </button>
         </div>
       </section>
 
-      <!-- Sidebar Console (Industrial Panel) -->
-      <aside class="control-sidebar">
+      <!-- Sidebar Console (Industrial Panel & Mobile Bottom Sheet) -->
+      <aside class="control-sidebar" id="controlSidebar">
+        <!-- Mobile Bottom Sheet Handle (Tap or Swipe to Collapse/Expand) -->
+        <div class="sheet-drawer-handle" id="sheetDrawerHandle" title="Нажмите или свайпните, чтобы скрыть/открыть настройки">
+          <div class="sheet-handle-pill"></div>
+          <div class="sheet-handle-content">
+            <span class="sheet-handle-icon" id="sheetToggleIcon">▼</span>
+            <span class="sheet-handle-text" id="sheetToggleText">СВЕРНУТЬ ПАНЕЛЬ НАСТРОЕК</span>
+          </div>
+        </div>
+
         <!-- Technical Tabs -->
         <nav class="sidebar-tabs">
           <button class="tab-btn active" data-tab="effect">
@@ -619,7 +631,13 @@
               <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
             </svg>
-            <span>Сменить</span>
+            <span>Камера</span>
+          </button>
+          <button class="btn" id="btnMirrorCamera" title="Переключить зеркальное отражение">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+            <span id="mirrorBtnText">Зеркало</span>
           </button>
           <button class="btn btn-primary" id="btnCapturePhoto">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

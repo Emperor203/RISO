@@ -33,6 +33,10 @@ class RisoApp {
 
     // Viewport & Zoom (Auto-fit by default)
     this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isDrawerCollapsed = false;
+    this.isCameraMirrored = false;
 
     // Interactive Modes
     this.isComparing = false;
@@ -523,19 +527,240 @@ class RisoApp {
   }
 
   // --------------------------------------------------------------------------
-  // Auto-Fit Zoom ("исправ зум он сам выбирал")
+  // Auto-Fit Zoom & Multi-Touch Gestures
   // --------------------------------------------------------------------------
   resetZoomAuto() {
     this.zoom = 1.0;
-    this.paperWrapper.style.transform = 'none';
-    document.getElementById('zoomText').textContent = 'Fit';
+    this.panX = 0;
+    this.panY = 0;
+    this.applyTransform();
   }
 
   applyManualZoom(factor) {
     this.zoom *= factor;
-    this.zoom = Math.max(0.25, Math.min(3.0, this.zoom));
-    this.paperWrapper.style.transform = `scale(${this.zoom})`;
-    document.getElementById('zoomText').textContent = `${Math.round(this.zoom * 100)}%`;
+    this.zoom = Math.max(0.4, Math.min(4.0, this.zoom));
+    if (this.zoom <= 1.02) {
+      this.panX = 0;
+      this.panY = 0;
+    }
+    this.applyTransform();
+  }
+
+  applyTransform() {
+    if (this.zoom <= 1.02 && Math.abs(this.panX) < 1 && Math.abs(this.panY) < 1) {
+      this.paperWrapper.style.transform = 'none';
+      const zt = document.getElementById('zoomText');
+      if (zt) zt.textContent = 'Fit';
+    } else {
+      this.paperWrapper.style.transform = `translate3d(${this.panX}px, ${this.panY}px, 0) scale(${this.zoom})`;
+      const zt = document.getElementById('zoomText');
+      if (zt) zt.textContent = `${Math.round(this.zoom * 100)}%`;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Collapsible Bottom Sheet Drawer ("вниз можно ли его скрыть / свайпнуть")
+  // --------------------------------------------------------------------------
+  toggleDrawer(forceState) {
+    if (typeof forceState === 'boolean') {
+      this.isDrawerCollapsed = forceState;
+    } else {
+      this.isDrawerCollapsed = !this.isDrawerCollapsed;
+    }
+
+    const sidebar = document.getElementById('controlSidebar');
+    const workspace = document.querySelector('.app-workspace');
+    const toggleIcon = document.getElementById('sheetToggleIcon');
+    const toggleText = document.getElementById('sheetToggleText');
+    const floatToggleBtn = document.getElementById('btnToggleDrawer');
+
+    if (sidebar) {
+      sidebar.classList.toggle('collapsed', this.isDrawerCollapsed);
+    }
+    if (workspace) {
+      workspace.classList.toggle('drawer-collapsed', this.isDrawerCollapsed);
+    }
+
+    if (this.isDrawerCollapsed) {
+      if (toggleIcon) toggleIcon.textContent = '▲';
+      if (toggleText) toggleText.textContent = 'ОТКРЫТЬ НАСТРОЙКИ';
+      if (floatToggleBtn) {
+        floatToggleBtn.textContent = '▲ НАСТРОЙКИ';
+        floatToggleBtn.classList.add('active');
+      }
+      this.showToast('Панель скрыта — полный просмотр артворка 🖼️');
+    } else {
+      if (toggleIcon) toggleIcon.textContent = '▼';
+      if (toggleText) toggleText.textContent = 'СВЕРНУТЬ ПАНЕЛЬ НАСТРОЕК';
+      if (floatToggleBtn) {
+        floatToggleBtn.textContent = '▼ СВЕРНУТЬ';
+        floatToggleBtn.classList.remove('active');
+      }
+    }
+    this.triggerHaptic('impact');
+  }
+
+  initDrawerEvents() {
+    const drawerHandle = document.getElementById('sheetDrawerHandle');
+    const floatToggleBtn = document.getElementById('btnToggleDrawer');
+    const sidebarTabs = document.querySelector('.sidebar-tabs');
+
+    if (floatToggleBtn) {
+      floatToggleBtn.addEventListener('click', () => {
+        this.toggleDrawer();
+      });
+    }
+
+    if (drawerHandle) {
+      drawerHandle.addEventListener('click', () => {
+        this.toggleDrawer();
+      });
+
+      // Touch swipe gesture on handle (swipe down to collapse, swipe up to expand)
+      let startY = 0;
+      let startX = 0;
+      drawerHandle.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          startY = e.touches[0].clientY;
+          startX = e.touches[0].clientX;
+        }
+      }, { passive: true });
+
+      drawerHandle.addEventListener('touchend', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+          const diffY = e.changedTouches[0].clientY - startY;
+          const diffX = Math.abs(e.changedTouches[0].clientX - startX);
+          if (Math.abs(diffY) > 25 && Math.abs(diffY) > diffX) {
+            if (diffY > 0 && !this.isDrawerCollapsed) {
+              this.toggleDrawer(true);
+            } else if (diffY < 0 && this.isDrawerCollapsed) {
+              this.toggleDrawer(false);
+            }
+          }
+        }
+      }, { passive: true });
+    }
+
+    if (sidebarTabs) {
+      let tabStartY = 0;
+      sidebarTabs.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          tabStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      sidebarTabs.addEventListener('touchend', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+          const diffY = e.changedTouches[0].clientY - tabStartY;
+          if (diffY > 45 && !this.isDrawerCollapsed) {
+            this.toggleDrawer(true);
+          }
+        }
+      }, { passive: true });
+    }
+  }
+
+  initStageGestures() {
+    const stage = this.canvasStage;
+    if (!stage) return;
+
+    let touchStartDist = 0;
+    let initialZoom = 1.0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let initialPanX = 0;
+    let initialPanY = 0;
+    let isPinching = false;
+    let isPanning = false;
+    let lastTapTime = 0;
+
+    // Multi-touch gestures (Pinch-to-zoom + Pan + Double tap)
+    stage.addEventListener('touchstart', (e) => {
+      if (this.isComparing || this.isDraggingSplit) return;
+
+      if (e.touches.length === 2) {
+        isPinching = true;
+        isPanning = false;
+        touchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialZoom = this.zoom;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTapTime < 300) {
+          // Double-tap
+          if (this.zoom > 1.15) {
+            this.resetZoomAuto();
+            this.showToast('Масштаб: 100% (Fit)');
+          } else {
+            this.zoom = 2.0;
+            this.panX = 0;
+            this.panY = 0;
+            this.applyTransform();
+            this.showToast('Масштаб: 200%');
+          }
+          this.triggerHaptic('impact');
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        if (this.zoom > 1.05) {
+          isPanning = true;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          initialPanX = this.panX;
+          initialPanY = this.panY;
+        }
+      }
+    }, { passive: false });
+
+    stage.addEventListener('touchmove', (e) => {
+      if (this.isComparing || this.isDraggingSplit) return;
+
+      if (e.touches.length === 2 && isPinching && touchStartDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const scaleFactor = currentDist / touchStartDist;
+        this.zoom = Math.max(0.4, Math.min(4.0, initialZoom * scaleFactor));
+        this.applyTransform();
+      } else if (e.touches.length === 1 && isPanning && this.zoom > 1.05) {
+        if (e.cancelable) e.preventDefault();
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        this.panX = initialPanX + dx;
+        this.panY = initialPanY + dy;
+        this.applyTransform();
+      }
+    }, { passive: false });
+
+    const endTouch = (e) => {
+      if (e.touches.length < 2) {
+        isPinching = false;
+      }
+      if (e.touches.length === 0) {
+        isPanning = false;
+        if (this.zoom < 0.95) {
+          this.resetZoomAuto();
+        }
+      }
+    };
+
+    stage.addEventListener('touchend', endTouch);
+    stage.addEventListener('touchcancel', endTouch);
+
+    // Mouse Wheel Zoom
+    stage.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey || stage.matches(':hover')) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1.15 : 0.88;
+        this.applyManualZoom(delta);
+      }
+    }, { passive: false });
   }
 
   // --------------------------------------------------------------------------
@@ -1010,6 +1235,22 @@ class RisoApp {
       });
     }
 
+    const btnMirrorCamera = document.getElementById('btnMirrorCamera');
+    if (btnMirrorCamera) {
+      btnMirrorCamera.addEventListener('click', () => {
+        this.isCameraMirrored = !this.isCameraMirrored;
+        if (this.cameraVideo) {
+          this.cameraVideo.classList.toggle('mirrored', this.isCameraMirrored);
+        }
+        const mirrorText = document.getElementById('mirrorBtnText');
+        if (mirrorText) {
+          mirrorText.textContent = this.isCameraMirrored ? 'Зеркало: Вкл' : 'Зеркало: Выкл';
+        }
+        this.triggerHaptic('selection');
+        this.showToast(this.isCameraMirrored ? 'Зеркало включено' : 'Естественное направление (без зеркала)');
+      });
+    }
+
     const btnCapturePhoto = document.getElementById('btnCapturePhoto');
     if (btnCapturePhoto) {
       btnCapturePhoto.addEventListener('click', () => {
@@ -1107,6 +1348,10 @@ class RisoApp {
     window.addEventListener('resize', () => {
       this.resetZoomAuto();
     });
+
+    // Mobile Drawer & Stage Gestures
+    this.initDrawerEvents();
+    this.initStageGestures();
   }
 
   bindRange(id, valId, suffix, callback) {
@@ -1297,6 +1542,9 @@ class RisoApp {
       });
 
       this.cameraVideo.srcObject = this.cameraStream;
+      if (this.cameraVideo) {
+        this.cameraVideo.classList.toggle('mirrored', this.isCameraMirrored);
+      }
       await this.cameraVideo.play();
       this.cameraModal.classList.add('active');
     } catch (err) {
@@ -1333,6 +1581,9 @@ class RisoApp {
         audio: false
       });
       this.cameraVideo.srcObject = this.cameraStream;
+      if (this.cameraVideo) {
+        this.cameraVideo.classList.toggle('mirrored', this.isCameraMirrored);
+      }
       await this.cameraVideo.play();
     } catch (err) {
       console.warn('Switch camera error:', err);
@@ -1350,7 +1601,8 @@ class RisoApp {
     snapCanvas.height = vh;
     const ctx = snapCanvas.getContext('2d');
 
-    if (this.cameraFacingMode === 'user') {
+    // Зеркалирование только если пользователь явно включил режим зеркала
+    if (this.isCameraMirrored) {
       ctx.translate(vw, 0);
       ctx.scale(-1, 1);
     }
